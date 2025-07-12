@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Skills Showcase</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for error messages */
+        .error-message {
+            color: #ef4444; /* Tailwind red-500 */
+            font-size: 0.875rem; /* text-sm */
+            margin-top: 0.25rem; /* mt-1 */
+        }
+
+        /* Custom styles for the success modal */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 0.5rem; /* rounded-lg */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-xl */
+            text-align: center;
+            position: relative;
+        }
+
+        .close-button {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="font-sans bg-gray-100 text-gray-800 flex flex-col min-h-screen">
+
+    <!-- Header Section -->
+    <header class="bg-blue-600 text-white p-4 shadow-md">
+        <div class="container mx-auto flex flex-col md:flex-row justify-between items-center">
+            <h1 class="text-3xl font-bold mb-2 md:mb-0">Web Showcase</h1>
+            <nav>
+                <ul class="flex space-x-4">
+                    <li><a href="#contact" class="hover:text-blue-200 transition duration-300">Contact Form</a></li>
+                    <li><a href="#todo" class="hover:text-blue-200 transition duration-300">To-Do List</a></li>
+                    <li><a href="#" class="hover:text-blue-200 transition duration-300">About</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content Section (CSS Grid for layout) -->
+    <main class="container mx-auto p-6 flex-grow grid grid-cols-1 md:grid-cols-2 gap-8">
+
+        <!-- Contact Form Section -->
+        <section id="contact" class="bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-2xl font-semibold mb-4 text-center">Contact Us</h2>
+            <form id="contactForm" class="space-y-4">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Name:</label>
+                    <input type="text" id="name" name="name" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Your Name">
+                    <span id="nameError" class="error-message"></span>
+                </div>
+
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email:</label>
+                    <input type="email" id="email" name="email" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="your.email@example.com">
+                    <span id="emailError" class="error-message"></span>
+                </div>
+
+                <div>
+                    <label for="message" class="block text-sm font-medium text-gray-700 mb-1">Message:</label>
+                    <textarea id="message" name="message" rows="4" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Your message..."></textarea>
+                    <span id="messageError" class="error-message"></span>
+                </div>
+
+                <div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-300">
+                        Send Message
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- To-Do List Section -->
+        <section id="todo" class="bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-2xl font-semibold mb-4 text-center">My To-Do List</h2>
+            <div class="flex flex-col sm:flex-row gap-2 mb-4">
+                <input type="text" id="newTaskInput" class="flex-grow p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Add a new task...">
+                <button id="addTaskBtn" class="bg-green-600 text-white py-3 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-300">
+                    Add Task
+                </button>
+            </div>
+            <ul id="taskList" class="space-y-2">
+                <!-- To-Do items will be added here dynamically -->
+            </ul>
+        </section>
+
+    </main>
+
+    <!-- Footer Section -->
+    <footer class="bg-gray-800 text-white p-4 text-center mt-8">
+        <div class="container mx-auto">
+            <p>&copy; 2025 Web Skills Showcase. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-button" id="closeModalBtn">&times;</span>
+            <h3 class="text-xl font-bold mb-4 text-green-600">Success!</h3>
+            <p>Your message has been sent successfully.</p>
+            <button id="modalOkBtn" class="mt-4 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-300">
+                OK
+            </button>
+        </div>
+    </div>
+
+
+    <script>
+        // --- Contact Form Validation Logic ---
+        const contactForm = document.getElementById('contactForm');
+        const nameInput = document.getElementById('name');
+        const emailInput = document.getElementById('email');
+        const messageInput = document.getElementById('message');
+
+        const nameError = document.getElementById('nameError');
+        const emailError = document.getElementById('emailError');
+        const messageError = document.getElementById('messageError');
+
+        const successModal = document.getElementById('successModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const modalOkBtn = document.getElementById('modalOkBtn');
+
+        // Function to validate name field
+        function validateName() {
+            if (nameInput.value.trim() === '') {
+                nameError.textContent = 'Name is required.';
+                return false;
+            }
+            nameError.textContent = '';
+            return true;
+        }
+
+        // Function to validate email format
+        function validateEmail() {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (emailInput.value.trim() === '') {
+                emailError.textContent = 'Email is required.';
+                return false;
+            } else if (!emailRegex.test(emailInput.value.trim())) {
+                emailError.textContent = 'Please enter a valid email address.';
+                return false;
+            }
+            emailError.textContent = '';
+            return true;
+        }
+
+        // Function to validate message field
+        function validateMessage() {
+            if (messageInput.value.trim() === '') {
+                messageError.textContent = 'Message cannot be empty.';
+                return false;
+            }
+            messageError.textContent = '';
+            return true;
+        }
+
+        // Add event listeners for real-time validation feedback
+        nameInput.addEventListener('input', validateName);
+        emailInput.addEventListener('input', validateEmail);
+        messageInput.addEventListener('input', validateMessage);
+
+        // Handle form submission
+        contactForm.addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent default form submission
+
+            // Run all validations
+            const isNameValid = validateName();
+            const isEmailValid = validateEmail();
+            const isMessageValid = validateMessage();
+
+            // If all fields are valid, simulate submission and show success modal
+            if (isNameValid && isEmailValid && isMessageValid) {
+                // In a real application, you would send this data to a server
+                console.log('Form Submitted Successfully!');
+                console.log('Name:', nameInput.value);
+                console.log('Email:', emailInput.value);
+                console.log('Message:', messageInput.value);
+
+                // Show success modal
+                successModal.style.display = 'flex';
+
+                // Clear the form fields
+                contactForm.reset();
+                // Clear any lingering error messages
+                nameError.textContent = '';
+                emailError.textContent = '';
+                messageError.textContent = '';
+            }
+        });
+
+        // Close modal functionality
+        closeModalBtn.addEventListener('click', () => {
+            successModal.style.display = 'none';
+        });
+
+        modalOkBtn.addEventListener('click', () => {
+            successModal.style.display = 'none';
+        });
+
+        window.addEventListener('click', (event) => {
+            if (event.target === successModal) {
+                successModal.style.display = 'none';
+            }
+        });
+
+
+        // --- To-Do List Logic ---
+        const newTaskInput = document.getElementById('newTaskInput');
+        const addTaskBtn = document.getElementById('addTaskBtn');
+        const taskList = document.getElementById('taskList');
+
+        // Function to add a new task
+        addTaskBtn.addEventListener('click', function() {
+            const taskText = newTaskInput.value.trim(); // Get text and remove whitespace
+
+            if (taskText !== '') {
+                // Create new list item (li)
+                const listItem = document.createElement('li');
+                listItem.className = 'flex items-center justify-between bg-gray-50 p-3 rounded-md shadow-sm'; // Tailwind classes
+
+                // Create span for task text
+                const taskSpan = document.createElement('span');
+                taskSpan.textContent = taskText;
+                taskSpan.className = 'text-gray-800 flex-grow mr-2'; // Tailwind classes
+
+                // Create delete button
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+                deleteButton.className = 'bg-red-500 text-white py-1 px-3 rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 transition duration-300 text-sm'; // Tailwind classes
+
+                // Add event listener to delete button
+                deleteButton.addEventListener('click', function() {
+                    taskList.removeChild(listItem); // Remove the parent li element
+                });
+
+                // Append span and button to the list item
+                listItem.appendChild(taskSpan);
+                listItem.appendChild(deleteButton);
+
+                // Append the new list item to the task list
+                taskList.appendChild(listItem);
+
+                // Clear the input field
+                newTaskInput.value = '';
+            } else {
+                // Optionally provide feedback if input is empty
+                newTaskInput.placeholder = 'Task cannot be empty!';
+                setTimeout(() => {
+                    newTaskInput.placeholder = 'Add a new task...';
+                }, 2000);
+            }
+        });
+
+        // Allow adding task with Enter key
+        newTaskInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                addTaskBtn.click(); // Simulate a click on the add button
+            }
+        });
+    </script>
+</body>
+</html>
