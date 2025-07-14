@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Enhanced Portfolio</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      background: linear-gradient(to right, #fdfbfb, #ebedee);
+      color: #333;
+    }
+    header {
+      background: #333;
+      color: white;
+      padding: 1em;
+      text-align: center;
+      animation: fadeInDown 1s ease-in-out;
+    }
+    nav a {
+      color: white;
+      margin: 0 15px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: color 0.3s;
+    }
+    nav a:hover {
+      color: #ffd700;
+    }
+    main {
+      margin-top: 20px;
+    }
+    section {
+      margin-bottom: 50px;
+      animation: fadeIn 1s ease-in;
+    }
+    input, textarea, select, button {
+      padding: 0.7em;
+      margin: 0.5em 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      width: 100%;
+      max-width: 400px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #todo-list li {
+      margin-top: 5px;
+      background: #fff;
+      padding: 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    #todo-list li:hover {
+      transform: scale(1.03);
+      background-color: #e0ffe0;
+    }
+    #product-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    .product {
+      background: white;
+      border: 1px solid #ccc;
+      padding: 15px;
+      border-radius: 8px;
+      width: calc(33% - 30px);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .product:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    @media (max-width: 768px) {
+      .product {
+        width: 100%;
+      }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>My Enhanced Portfolio</h1>
+    <nav>
+      <a href="#about">About</a>
+      <a href="#todo">To-Do App</a>
+      <a href="#products">Products</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="about">
+      <h2>About Me</h2>
+      <p>Hello! I'm a web developer with a passion for creating interactive and user-friendly websites. I enjoy turning complex problems into simple, beautiful, and intuitive designs.</p>
+    </section>
+
+    <section id="todo">
+      <h2>To-Do List</h2>
+      <input id="todo-input" type="text" placeholder="Add a new task..." />
+      <button onclick="addTodo()">Add</button>
+      <ul id="todo-list"></ul>
+    </section>
+
+    <section id="products">
+      <h2>Product List</h2>
+      <label for="filter">Filter by Category:</label>
+      <select id="filter" onchange="filterProducts()">
+        <option value="all">All</option>
+        <option value="electronics">Electronics</option>
+        <option value="books">Books</option>
+      </select>
+      <label for="sort">Sort by:</label>
+      <select id="sort" onchange="sortProducts()">
+        <option value="default">Default</option>
+        <option value="price">Price</option>
+        <option value="rating">Rating</option>
+      </select>
+      <div id="product-container"></div>
+    </section>
+
+    <section id="contact">
+      <h2>Contact Me</h2>
+      <form>
+        <input type="text" placeholder="Your Name" required />
+        <input type="email" placeholder="Your Email" required />
+        <textarea placeholder="Your Message" rows="5" required></textarea>
+        <button type="submit">Send</button>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    // To-Do App with localStorage
+    let todos = JSON.parse(localStorage.getItem('todos')) || [];
+
+    function addTodo() {
+      const input = document.getElementById('todo-input');
+      if (input.value.trim() !== '') {
+        todos.push(input.value);
+        input.value = '';
+        saveTodos();
+        renderTodos();
+      }
+    }
+
+    function saveTodos() {
+      localStorage.setItem('todos', JSON.stringify(todos));
+    }
+
+    function renderTodos() {
+      const list = document.getElementById('todo-list');
+      list.innerHTML = '';
+      todos.forEach((todo, index) => {
+        const li = document.createElement('li');
+        li.textContent = todo;
+        li.onclick = () => {
+          todos.splice(index, 1);
+          saveTodos();
+          renderTodos();
+        };
+        list.appendChild(li);
+      });
+    }
+
+    renderTodos();
+
+    // Product List
+    const products = [
+      { name: 'Laptop', category: 'electronics', price: 900, rating: 4.5 },
+      { name: 'Headphones', category: 'electronics', price: 150, rating: 4.0 },
+      { name: 'Book: JS Basics', category: 'books', price: 20, rating: 4.7 },
+    ];
+
+    function displayProducts(data) {
+      const container = document.getElementById('product-container');
+      container.innerHTML = '';
+      data.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'product';
+        div.innerHTML = `<strong>${p.name}</strong><br>Price: $${p.price}<br>Rating: ${p.rating}`;
+        container.appendChild(div);
+      });
+    }
+
+    function filterProducts() {
+      const category = document.getElementById('filter').value;
+      const filtered = category === 'all' ? products : products.filter(p => p.category === category);
+      sortAndDisplay(filtered);
+    }
+
+    function sortProducts() {
+      filterProducts();
+    }
+
+    function sortAndDisplay(list) {
+      const sortType = document.getElementById('sort').value;
+      let sorted = [...list];
+      if (sortType === 'price') sorted.sort((a, b) => a.price - b.price);
+      if (sortType === 'rating') sorted.sort((a, b) => b.rating - a.rating);
+      displayProducts(sorted);
+    }
+
+    displayProducts(products);
+  </script>
+</body>
+</html>
