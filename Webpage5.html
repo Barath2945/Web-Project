@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Interactive Webpage</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Font - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Three.js CDN for particle background -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        /* CSS Variables for Theming */
+        :root {
+            --bg-primary: #e0e0e0; /* Darker light gray for primary background */
+            --bg-secondary: #f0f0f0; /* Darker white for secondary background */
+            --text-primary: #0a0a0a; /* Almost black for primary text */
+            --text-secondary: #333333; /* Darker gray for secondary text */
+            --border-color: #c0c0c0; /* Darker gray for borders */
+            --shadow-color: rgba(0, 0, 0, 0.1); /* More opaque shadow */
+            --card-bg: #e8e8e8; /* Darker light gray for cards */
+            --card-hover-shadow: rgba(0, 0, 0, 0.2); /* More opaque hover shadow */
+            --button-text-light: #ffffff;
+            --button-text-dark: #4f46e5; /* Indigo-600 */
+        }
+
+        .dark {
+            --bg-primary: #0a0a0a; /* Very dark gray/almost black */
+            --bg-secondary: #1a1a1a; /* Very dark gray */
+            --text-primary: #ffffff; /* Pure white for sharp contrast */
+            --text-secondary: #cccccc; /* Lighter gray for secondary text */
+            --border-color: #3a3a3a; /* Darker border */
+            --shadow-color: rgba(0, 0, 0, 0.5); /* Much more opaque shadow */
+            --card-bg: #1e1e1e; /* Darker gray for cards */
+            --card-hover-shadow: rgba(0, 0, 0, 0.6); /* Much more opaque hover hover shadow */
+            --button-text-light: #ffffff;
+            --button-text-dark: #6366f1; /* Indigo-500 */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden; /* Prevent horizontal scroll due to animations */
+            transition: background-color 0.3s ease, color 0.3s ease, padding-left 0.3s ease; /* Added padding-left transition */
+            padding-left: 0; /* Default for mobile */
+        }
+
+        @media (min-width: 768px) { /* md breakpoint */
+            body {
+                padding-left: 3rem; /* Width of the collapsed sidebar (w-12 = 3rem) */
+            }
+            /* When sidebar is hovered, adjust body padding */
+            .sidebar:hover + main, .sidebar:hover + #mobile-nav-backdrop + main {
+                padding-left: 16rem; /* Width of the expanded sidebar */
+            }
+        }
+
+        /* Custom CSS for animations and rounded corners */
+        .rounded-full-lg {
+            border-radius: 9999px; /* Tailwind's rounded-full */
+        }
+
+        .rounded-xl-lg {
+            border-radius: 0.75rem; /* Tailwind's rounded-xl */
+        }
+
+        /* Keyframe animations */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .animate-fade-in-down {
+            animation: fadeInDown 1s ease-out forwards;
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInUp 1s ease-out forwards;
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        /* Initial state for scroll-animated elements */
+        .feature-card {
+            opacity: 0;
+            transform: translateY(50px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+
+        /* State when element is in view */
+        .feature-card.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Dark overlay for mobile when sidebar is open */
+        .mobile-nav-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6); /* Darker overlay */
+            z-index: 90; /* Below sidebar, above main content */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+
+        .mobile-nav-backdrop.is-open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Hero section specific styles for particle background and animated background color */
+        #home {
+            position: relative; /* Needed for absolute positioning of canvas */
+            overflow: hidden; /* Hide particles outside the section */
+            animation: colorShift 10s linear infinite; /* Cycle through 5 colors, 2s per color */
+            min-height: 100vh; /* Make the home section fill the viewport height */
+            display: flex; /* Use flexbox to center content vertically */
+            align-items: center; /* Center content vertically */
+            justify-content: center; /* Center content horizontally */
+        }
+
+        @keyframes colorShift {
+            0% { background-color: #e0e7ff; } /* Pale Indigo */
+            20% { background-color: #ede9fe; } /* Pale Purple */
+            40% { background-color: #fce7f3; } /* Pale Pink */
+            60% { background-color: #e0f2fe; } /* Pale Cyan */
+            80% { background-color: #fffbe0; } /* Pale Amber */
+            100% { background-color: #e0e7ff; } /* Back to Pale Indigo */
+        }
+
+        #particle-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0; /* Behind content */
+        }
+
+        #home > div { /* Target the content div inside hero */
+            position: relative; /* Bring content above canvas */
+            z-index: 1;
+        }
+
+        /* Testimonial slider styles */
+        .testimonial-slider {
+            position: relative;
+            overflow: hidden;
+            border-radius: 0.75rem;
+            background-color: var(--card-bg);
+            box-shadow: 0 4px 6px -1px var(--shadow-color), 0 2px 4px -2px var(--shadow-color);
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .testimonial-container {
+            display: flex;
+            transition: transform 0.5s ease-in-out;
+        }
+
+        .testimonial-item {
+            min-width: 100%; /* Each item takes full width */
+            box-sizing: border-box;
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+
+        .slider-button {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 9999px;
+            cursor: pointer;
+            z-index: 10;
+            transition: background-color 0.3s ease;
+        }
+
+        .slider-button:hover {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        .slider-button.prev {
+            left: 1rem;
+        }
+
+        .slider-button.next {
+            right: 1rem;
+        }
+
+        /* Form error messages */
+        .error-message {
+            color: #ef4444; /* Tailwind red-500 */
+            font-size: 0.875rem; /* Tailwind text-sm */
+            margin-top: 0.25rem;
+        }
+
+        /* Theme Toggle Button Styles */
+        #theme-toggle {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: var(--text-primary); /* Changed to primary text color */
+            transition: color 0.3s ease, transform 0.2s ease;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+        }
+
+        #theme-toggle:hover {
+            color: var(--text-primary);
+            transform: scale(1.1);
+        }
+
+        /* General element styling for themes */
+        .bg-themed-secondary {
+            background-color: var(--bg-secondary);
+            transition: background-color 0.3s ease;
+        }
+        .text-themed-primary {
+            color: var(--text-primary);
+            transition: color 0.3s ease;
+        }
+        .text-themed-secondary {
+            color: var(--text-secondary);
+            transition: color 0.3s ease;
+        }
+        .shadow-themed {
+            box-shadow: 0 4px 6px -1px var(--shadow-color), 0 2px 4px -2px var(--shadow-color);
+            transition: box-shadow 0.3s ease;
+        }
+        .card-themed {
+            background-color: var(--card-bg);
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card-themed:hover {
+            box-shadow: 0 10px 15px -3px var(--card-hover-shadow), 0 4px 6px -4px var(--card-hover-shadow);
+        }
+        .input-themed {
+            background-color: var(--bg-secondary);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+        .input-themed:focus {
+            outline: none;
+            border-color: #6366f1; /* Tailwind indigo-500 */
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.5); /* Tailwind indigo-500 with transparency */
+        }
+
+        /* Pulse animation for CTA button */
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); /* Indigo-500 */
+            }
+            70% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 15px rgba(99, 102, 241, 0);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+            }
+        }
+
+        .animate-pulse-once {
+            animation: pulse 2s ease-out 1; /* Run once on load */
+        }
+
+        /* Background pattern animation for About section */
+        @keyframes backgroundPan {
+            from {
+                background-position: 0% 0%;
+            }
+            to {
+                background-position: -200% 0%;
+            }
+        }
+
+        .animated-bg-pattern {
+            background-image: linear-gradient(90deg, var(--bg-primary) 0%, var(--bg-primary) 50%, var(--bg-secondary) 50%, var(--bg-secondary) 100%);
+            background-size: 200% 100%;
+            animation: backgroundPan 15s linear infinite alternate;
+        }
+
+        /* Scroll-to-top button bounce animation */
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+
+        /* SVG Divider Styles */
+        .svg-divider {
+            display: block;
+            width: 100%;
+            height: 100px; /* Adjust height as needed */
+            position: relative;
+            z-index: 10; /* Ensure it's above other content if necessary */
+        }
+        .svg-divider.top {
+            transform: rotate(180deg);
+            margin-bottom: -1px; /* Overlap slightly to prevent gaps */
+        }
+        .svg-divider.bottom {
+            margin-top: -1px; /* Overlap slightly to prevent gaps */
+        }
+        .svg-divider .shape-fill {
+            fill: var(--bg-secondary); /* Color based on current theme's secondary background */
+            transition: fill 0.3s ease;
+        }
+        .svg-divider.top .shape-fill {
+            fill: var(--bg-primary); /* Color based on current theme's primary background */
+        }
+        /* Specific color for divider after hero section */
+        .svg-divider.hero-bottom .shape-fill {
+            fill: var(--bg-secondary); /* Should be the color of the section below hero */
+        }
+        .dark .svg-divider.hero-bottom .shape-fill {
+            fill: var(--bg-secondary); /* Darker gray for dark mode */
+        }
+
+        /* To-Do List Specific Styles */
+        .todo-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s ease;
+        }
+        .todo-item:last-child {
+            border-bottom: none;
+        }
+        .todo-item.completed span {
+            text-decoration: line-through;
+            color: var(--text-secondary);
+            opacity: 0.7;
+        }
+        .todo-item .task-text {
+            flex-grow: 1;
+            text-align: left;
+            margin-left: 0.5rem;
+            font-size: 1.125rem; /* text-lg */
+            color: var(--text-primary);
+        }
+        .todo-item .task-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .todo-item input[type="checkbox"] {
+            width: 1.25rem;
+            height: 1.25rem;
+            cursor: pointer;
+            accent-color: #6366f1; /* Tailwind indigo-500 */
+        }
+        .todo-item .delete-btn {
+            background: none;
+            border: none;
+            color: #ef4444; /* Tailwind red-500 */
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        .todo-item .delete-btn:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+            transform: scale(1.1);
+        }
+        .todo-filters button {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        .todo-filters button.active {
+            background-color: #6366f1; /* Tailwind indigo-500 */
+            color: white;
+            border-color: #6366f1;
+        }
+        .todo-filters button:hover:not(.active) {
+            background-color: var(--border-color);
+        }
+        .clear-completed-btn {
+            background-color: #f87171; /* Tailwind red-400 */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+        }
+        .clear-completed-btn:hover {
+            background-color: #ef4444; /* Tailwind red-500 */
+        }
+
+        /* Sidebar specific styles */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 16rem; /* Full width when open */
+            height: 100vh;
+            background-color: var(--bg-secondary);
+            box-shadow: 0 4px 6px -1px var(--shadow-color), 0 2px 4px -2px var(--shadow-color);
+            z-index: 100; /* Above backdrop */
+            display: flex; /* Ensure it's flex by default */
+            flex-direction: column;
+            padding: 1.5rem 1rem;
+            overflow-y: auto; /* Enable scrolling for long navigation */
+            transition: transform 0.3s ease-in-out, background-color 0.3s ease, box-shadow 0.3s ease;
+
+            /* Mobile specific hiding: starts off-screen */
+            transform: translateX(-100%);
+        }
+
+        @media (min-width: 768px) { /* md breakpoint */
+            .sidebar {
+                transform: translateX(-13rem); /* Hide 13rem, show 3rem (16rem - 3rem) */
+            }
+            .sidebar:hover {
+                transform: translateX(0); /* Expand on hover */
+            }
+            /* Hide Barath logo and nav links by default on desktop, show on hover */
+            .sidebar .sidebar-header,
+            .sidebar nav {
+                opacity: 0;
+                visibility: hidden;
+                transition: opacity 0.3s ease-in-out;
+            }
+            .sidebar:hover .sidebar-header,
+            .sidebar:hover nav {
+                opacity: 1;
+                visibility: visible;
+            }
+        }
+
+        /* Class to open sidebar on mobile (still controlled by JS toggle) */
+        .sidebar.is-open {
+            transform: translateX(0);
+        }
+        /* When sidebar is open (mobile), ensure content is visible */
+        .sidebar.is-open .sidebar-header,
+        .sidebar.is-open nav {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .sidebar .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem; /* Add some padding below for separation */
+            border-bottom: 1px solid var(--border-color); /* Separator */
+        }
+
+        .sidebar .sidebar-logo {
+            font-size: 1.75rem; /* text-3xl */
+            font-weight: 700;
+            color: var(--text-primary);
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s ease;
+        }
+        .sidebar .sidebar-logo:hover {
+            background-color: rgba(0,0,0,0.05); /* subtle hover */
+        }
+
+        /* Mobile close button inside sidebar */
+        .sidebar .mobile-nav-close-button {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 2rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s ease-in-out;
+            display: block; /* Always show in sidebar for mobile */
+        }
+        .sidebar .mobile-nav-close-button:hover {
+            background-color: rgba(0,0,0,0.1);
+        }
+        @media (min-width: 768px) {
+            .sidebar .mobile-nav-close-button {
+                display: none; /* Hide close button on desktop */
+            }
+        }
+
+        /* Theme toggle inside sidebar */
+        .sidebar #theme-toggle {
+            font-size: 1.5rem;
+            color: var(--text-primary); /* Use primary text color */
+            margin-left: 1rem; /* Space from close button */
+        }
+
+        .sidebar nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem; /* space-y-3 */
+        }
+
+        .sidebar nav a {
+                display: flex;
+                align-items: center;
+                padding: 0.75rem 1rem;
+                border-radius: 0.5rem;
+                color: var(--text-secondary);
+                font-weight: 500;
+                transition: background-color 0.2s ease, color 0.2s ease, border-left 0.2s ease, transform 0.2s ease;
+                border-left: 4px solid transparent; /* Default transparent border */
+            }
+
+        .sidebar nav a:hover {
+            background-color: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        /* Active state for sidebar links with slide left effect */
+        .sidebar nav a.active {
+            background-color: #6366f1; /* Indigo-500 */
+            color: white;
+            border-left: 4px solid #4f46e5; /* Darker indigo border */
+            transform: translateX(-4px); /* Subtle slide effect */
+        }
+        .dark .sidebar nav a.active {
+            border-left: 4px solid #8b5cf6; /* Darker purple for dark mode */
+        }
+
+        /* Mobile menu button (hamburger) outside sidebar */
+        #mobile-menu-button {
+            position: fixed; /* Keep it fixed */
+            top: 1.5rem; /* Adjust position */
+            left: 1.5rem; /* Adjust position */
+            z-index: 101; /* Ensure it's above sidebar when sidebar is closed on mobile */
+            display: block; /* Show by default on mobile */
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            padding: 0.75rem; /* Slightly larger touch target */
+            border-radius: 0.5rem; /* Rounded corners */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Subtle shadow */
+        }
+        @media (min-width: 768px) {
+            #mobile-menu-button {
+                display: none; /* Hide on desktop */
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Fixed Left Sidebar Navigation -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <a href="#" class="sidebar-logo">Barath</a>
+            <!-- Close button for mobile sidebar -->
+            <button id="mobile-nav-close-button" class="mobile-nav-close-button rounded-full-lg md:hidden">&times;</button>
+            <!-- Theme Toggle Button inside sidebar for mobile and desktop -->
+            <button id="theme-toggle" aria-label="Toggle theme" class="ml-auto">
+                <span id="theme-icon">☀️</span> <!-- Sun icon for light mode -->
+            </button>
+        </div>
+        <nav id="sidebar-nav">
+            <a href="#home" data-section="home" data-scroll-to>Home</a>
+            <a href="#features" data-section="features" data-scroll-to>Features</a>
+            <a href="#about" data-section="about" data-scroll-to>About</a>
+            <a href="#learning-modules" data-section="learning-modules" data-scroll-to>Modules</a>
+            <a href="#todo-app" data-section="todo-app" data-scroll-to>To-Do List</a>
+            <a href="#testimonials" data-section="testimonials" data-scroll-to>Testimonials</a>
+            <a href="#contact" data-section="contact" data-scroll-to>Contact</a>
+        </nav>
+    </aside>
+
+    <!-- Mobile Menu Button (Hamburger icon) -->
+    <button id="mobile-menu-button" class="fixed top-4 left-4 z-50 p-2 rounded-lg shadow-md md:hidden">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+    </button>
+
+    <!-- Dark overlay for mobile when sidebar is open -->
+    <div id="mobile-nav-backdrop" class="mobile-nav-backdrop"></div>
+
+    <!-- Main Content Area -->
+    <main>
+        <!-- Hero Section -->
+        <section id="home" class="py-20 md:py-32 text-center rounded-b-lg shadow-lg">
+            <!-- Particle Canvas will be injected here by JavaScript -->
+            <canvas id="particle-canvas"></canvas>
+            <div class="container mx-auto px-4">
+                <h1 class="text-4xl md:text-6xl font-extrabold leading-tight mb-6 animate-fade-in-down text-gray-900">
+                    Welcome to My Website services
+                </h1>
+                <p class="text-lg md:text-xl mb-8 max-w-2xl mx-auto animate-fade-in-up text-gray-800">
+                    Discover innovative solutions that simplify your life and boost your productivity. Join us today!
+                </p>
+                <!-- No decorative images here as per previous request -->
+
+                <a href="#features" class="inline-block bg-white text-indigo-700 font-bold py-3 px-8 rounded-full shadow-lg hover:bg-gray-100 hover:scale-105 transform transition duration-300 ease-in-out animate-pulse-once">
+                    Learn More
+                </a>
+            </div>
+        </section>
+
+        <!-- SVG Wave Divider between Hero and Features -->
+        <div class="svg-divider bottom hero-bottom">
+            <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+                <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" class="shape-fill"></path>
+            </svg>
+        </div>
+
+        <!-- Features Section -->
+        <section id="features" class="py-16 md:py-24 bg-themed-secondary rounded-xl-lg mx-4 md:mx-auto my-8 shadow-themed">
+            <div class="container mx-auto px-4">
+                <h2 class="text-3xl md:text-4xl font-bold text-center mb-12 text-themed-primary animate-fade-in">Key Features</h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Feature 1 -->
+                    <div class="card-themed p-8 rounded-xl shadow-md transition-shadow duration-300 flex flex-col items-center text-center feature-card transform hover:-translate-y-2">
+                        <div class="bg-indigo-100 text-indigo-600 rounded-full p-4 mb-6 dark:bg-indigo-700 dark:text-indigo-200 transform hover:scale-110 transition-transform duration-300">
+                            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3 text-themed-primary">Easy to Use</h3>
+                        <p class="text-themed-secondary">Our intuitive interface ensures a smooth and enjoyable experience for everyone, from beginners to experts.</p>
+                    </div>
+
+                    <!-- Feature 2 -->
+                    <div class="card-themed p-8 rounded-xl shadow-md transition-shadow duration-300 flex flex-col items-center text-center feature-card transform hover:-translate-y-2">
+                        <div class="bg-green-100 text-green-600 rounded-full p-4 mb-6 dark:bg-green-700 dark:text-green-200 transform hover:scale-110 transition-transform duration-300">
+                            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3 text-themed-primary">Blazing Fast</h3>
+                        <p class="text-themed-secondary">Experience lightning-fast performance and quick load times, keeping you productive and efficient.</p>
+                    </div>
+
+                    <!-- Feature 3 -->
+                    <div class="card-themed p-8 rounded-xl shadow-md transition-shadow duration-300 flex flex-col items-center text-center feature-card transform hover:-translate-y-2">
+                        <div class="bg-yellow-100 text-yellow-600 rounded-full p-4 mb-6 dark:bg-yellow-700 dark:text-yellow-200 transform hover:scale-110 transition-transform duration-300">
+                            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0-2.08-.402-2.592 1M12 8c-1.11 0-2.08-.402-2.592-1m2.592 1a2.502 2.502 0 012.506 2.506V14a2.502 2.502 0 01-2.506 2.506z"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3 text-themed-primary">Highly Secure</h3>
+                        <p class="text-themed-secondary">Your data is safe with us. We employ top-tier security measures to protect your information.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SVG Wave Divider between Features and About -->
+        <div class="svg-divider top">
+            <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+                <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" class="shape-fill"></path>
+            </svg>
+        </div>
+
+        <!-- About Section -->
+        <section id="about" class="py-16 md:py-24 bg-themed-primary rounded-xl-lg mx-4 md:mx-auto my-8 shadow-themed animated-bg-pattern">
+            <div class="container mx-auto px-4 text-center">
+                <h2 class="text-3xl md:text-4xl font-bold mb-8 text-themed-primary animate-fade-in">About Us</h2>
+                <p class="text-lg text-themed-secondary max-w-3xl mx-auto leading-relaxed animate-fade-in-up">
+                    We are a passionate team dedicated to creating innovative solutions that empower individuals and businesses. Our mission is to provide high-quality, user-friendly products that make a real difference in your daily life. We believe in continuous improvement and are always striving to exceed expectations.
+                </p>
+                <p class="text-lg text-themed-secondary max-w-3xl mx-auto leading-relaxed mt-4 animate-fade-in-up">
+                    With years of experience in the industry, we understand the challenges you face and are committed to delivering reliable and efficient tools. Join our growing community and experience the future with MyBrand!
+                </p>
+            </div>
+        </section>
+
+        <!-- SVG Wave Divider between About and Learning Modules -->
+        <div class="svg-divider bottom">
+            <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+                <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" class="shape-fill"></path>
+            </svg>
+        </div>
+
+        <!-- Learning Modules Section -->
+        <section id="learning-modules" class="py-16 md:py-24 bg-themed-secondary rounded-xl-lg mx-4 md:mx-auto my-8 shadow-themed">
+            <div class="container mx-auto px-4">
+                <h2 class="text-3xl md:text-4xl font-bold text-center mb-12 text-themed-primary animate-fade-in">Our Learning Modules</h2>
+                <p class="text-lg text-themed-secondary max-w-3xl mx-auto mb-12 text-center animate-fade-in-up">
+                    Embark on a journey to master essential web development skills with our structured learning path.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Module 1: HTML & CSS Forms -->
+                    <div class="card-themed p-8 rounded-xl shadow-md transition-shadow duration-300 flex flex-col items-center text-center feature-card transform hover:-translate-y-2">
+                        <div class="bg-purple-100 text-purple-600 rounded-full p-4 mb-6 dark:bg-purple-700 dark:text-purple-200 transform hover:scale-110 transition-transform duration-300">
+                            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3 text-themed-primary">HTML & CSS Forms Mastery</h3>
+                        <p class="text-themed-secondary">
+                            Learn to build robust forms with various input types (text, email, submit, etc.) and style them beautifully using CSS for enhanced aesthetics and usability.
+                        </p>
+                    </div>
+
+                    <!-- Module 2: JavaScript Form Validation -->
+                    <div class="card-themed p-8 rounded-xl shadow-md transition-shadow duration-300 flex flex-col items-center text-center feature-card transform hover:-translate-y-2">
+                        <div class="bg-blue-100 text-blue-600 rounded-full p-4 mb-6 dark:bg-blue-700 dark:text-blue-200 transform hover:scale-110 transition-transform duration-300">
+                            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3 text-themed-primary">Dynamic Form Validation</h3>
+                        <p class="text-themed-secondary">
+                            Implement client-side JavaScript validation to ensure form data is correct, checking for required fields and proper email formats before submission.
+                        </p>
+                    </div>
+
+                    <!-- Module 3: Responsive Layouts (Flexbox & Grid) -->
+                    <div class="card-themed p-8 rounded-xl shadow-md transition-shadow duration-300 flex flex-col items-center text-center feature-card transform hover:-translate-y-2">
+                        <div class="bg-orange-100 text-orange-600 rounded-full p-4 mb-6 dark:bg-orange-700 dark:text-orange-200 transform hover:scale-110 transition-transform duration-300">
+                            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3 text-themed-primary">Adaptive Web Layouts</h3>
+                        <p class="text-themed-secondary">
+                            Master Flexbox and CSS Grid to build responsive webpage layouts that seamlessly adapt to various screen sizes, from mobile phones to large desktops.
+                        </p>
+                    </div>
+
+                    <!-- Module 4: JavaScript DOM Manipulation (Dynamic Content & Local Storage) -->
+                    <div class="card-themed p-8 rounded-xl shadow-md transition-shadow duration-300 flex flex-col items-center text-center feature-card transform hover:-translate-y-2">
+                        <div class="bg-teal-100 text-teal-600 rounded-full p-4 mb-6 dark:bg-teal-700 dark:text-teal-200 transform hover:scale-110 transition-transform duration-300">
+                            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3 text-themed-primary">Interactive DOM & Persistence</h3>
+                        <p class="text-themed-secondary">
+                            Dynamically add, remove, and modify webpage content using JavaScript, building interactive features like to-do lists or image galleries, with data persistence using **localStorage**.
+                        </p>
+                    </div>
+
+                    <!-- Module 5: Personal Portfolio Website -->
+                    <div class="card-themed p-8 rounded-xl shadow-md transition-shadow duration-300 flex flex-col items-center text-center feature-card transform hover:-translate-y-2">
+                        <div class="bg-red-100 text-red-600 rounded-full p-4 mb-6 dark:bg-red-700 dark:text-red-200 transform hover:scale-110 transition-transform duration-300">
+                            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h10a2 2 0 002-2V8m-2 0V5a2 2 0 00-2-2H9a2 2 0 00-2 2v3m-3 0h14m-7 4h7m-7 4h7m-9 4h.01"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3 text-themed-primary">Personal Portfolio Website</h3>
+                        <p class="text-themed-secondary">
+                            Design and build a professional, multi-page portfolio website with "About", "Projects", and "Contact" sections, ensuring full responsiveness.
+                        </p>
+                    </div>
+
+                    <!-- Module 6: Product Listing with Filtering & Sorting -->
+                    <div class="card-themed p-8 rounded-xl shadow-md transition-shadow duration-300 flex flex-col items-center text-center feature-card transform hover:-translate-y-2">
+                        <div class="bg-yellow-100 text-yellow-600 rounded-full p-4 mb-6 dark:bg-yellow-700 dark:text-yellow-200 transform hover:scale-110 transition-transform duration-300">
+                            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 8a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V8zM3 12a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2zM3 16a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3 text-themed-primary">Product Listing & Filtering</h3>
+                        <p class="text-themed-secondary">
+                            Develop interactive product pages where users can filter items by categories or price, and sort them based on various criteria like ratings.
+                        </p>
+                    </div>
+
+                    <!-- Module 7: Comprehensive Web App Development -->
+                    <div class="card-themed p-8 rounded-xl shadow-md transition-shadow duration-300 flex flex-col items-center text-center feature-card transform hover:-translate-y-2">
+                        <div class="bg-indigo-100 text-indigo-600 rounded-full p-4 mb-6 dark:bg-indigo-700 dark:text-indigo-200 transform hover:scale-110 transition-transform duration-300">
+                            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-1.25-3M15 10V5.25A2.75 2.75 0 0012.25 2.5h-1.5A2.75 2.75 0 008 5.25V10m7 0h2.25A2.75 2.75 0 0120 12.75v1.5A2.75 2.75 0 0117.25 17H15m0-7H8m7 0V5.25A2.75 2.75 0 0012.25 2.5h-1.5A2.75 2.75 0 008 5.25V10m7 0h2.25A2.75 2.75 0 0120 12.75v1.5A2.75 2.75 0 0117.25 17H15m0-7H8"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3 text-themed-primary">Comprehensive Web App</h3>
+                        <p class="text-themed-secondary">
+                            Integrate all learned skills to develop a final project (e.g., e-commerce site, blog, or advanced portfolio) with dynamic features.
+                        </p>
+                    </div>
+
+                    <!-- Module 8: Cross-Browser & Responsiveness -->
+                    <div class="card-themed p-8 rounded-xl shadow-md transition-shadow duration-300 flex flex-col items-center text-center feature-card transform hover:-translate-y-2">
+                        <div class="bg-pink-100 text-pink-600 rounded-full p-4 mb-6 dark:bg-pink-700 dark:text-pink-200 transform hover:scale-110 transition-transform duration-300">
+                            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-1.25-3M15 10V5.25A2.75 2.75 0 0012.25 2.5h-1.5A2.75 2.75 0 008 5.25V10m7 0h2.25A2.75 2.75 0 0120 12.75v1.5A2.75 2.75 0 0117.25 17H15m0-7H8m7 0V5.25A2.75 2.75 0 0012.25 2.5h-1.5A2.75 2.75 0 008 5.25V10m7 0h2.25A2.75 2.75 0 0120 12.75v1.5A2.75 2.75 0 0117.25 17H15m0-7H8"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3 text-themed-primary">Cross-Browser & Mobile Ready</h3>
+                        <p class="text-themed-secondary">
+                            Ensure your application works flawlessly across Chrome, Firefox, Safari, and mobile browsers, fixing any compatibility or display issues.
+                        </p>
+                    </div>
+
+                    <!-- Module 9: Web App Performance Optimization -->
+                    <div class="card-themed p-8 rounded-xl shadow-md transition-shadow duration-300 flex flex-col items-center text-center feature-card transform hover:-translate-y-2">
+                        <div class="bg-lime-100 text-lime-600 rounded-full p-4 mb-6 dark:bg-lime-700 dark:text-lime-200 transform hover:scale-110 transition-transform duration-300">
+                            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3 text-themed-primary">Performance Optimization</h3>
+                        <p class="text-themed-secondary">
+                            Learn to minimize CSS/JS, apply lazy loading for images, reduce HTTP requests, and optimize load times for efficient and quick-loading applications.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SVG Wave Divider between Learning Modules and To-Do App -->
+        <div class="svg-divider top">
+            <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+                <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" class="shape-fill"></path>
+            </svg>
+        </div>
+
+        <!-- Dynamic To-Do List -->
+        <section id="todo-app" class="py-16 md:py-24 bg-themed-primary rounded-xl-lg mx-4 md:mx-auto my-8 shadow-themed animated-bg-pattern">
+            <div class="container mx-auto px-4 text-center">
+                <h2 class="text-3xl md:text-4xl font-bold mb-8 text-themed-primary animate-fade-in">Dynamic To-Do List</h2>
+                <p class="text-lg text-themed-secondary max-w-2xl mx-auto mb-8 animate-fade-in-up">
+                    Manage your tasks efficiently with our interactive to-do list, built to demonstrate dynamic DOM manipulation.
+                </p>
+
+                <div class="max-w-xl mx-auto bg-themed-secondary p-8 rounded-xl shadow-themed animate-fade-in-up">
+                    <div class="flex flex-col sm:flex-row gap-4 mb-6">
+                        <input type="text" id="new-task-input" class="shadow appearance-none border rounded-lg w-full py-3 px-4 leading-tight focus:ring-2 input-themed" placeholder="Add a new task..." required>
+                        <button id="add-task-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 flex-shrink-0">
+                            Add Task
+                        </button>
+                    </div>
+                    <p class="error-message mb-4" id="task-input-error"></p>
+
+                    <div class="flex justify-center flex-wrap gap-3 mb-6 todo-filters">
+                        <button id="filter-all" class="active">All</button>
+                        <button id="filter-active">Active</button>
+                        <button id="filter-completed">Completed</button>
+                        <button id="clear-completed-btn" class="clear-completed-btn">Clear Completed</button>
+                    </div>
+
+                    <ul id="task-list" class="divide-y divide-themed-border border border-themed-border rounded-lg overflow-hidden">
+                        <!-- To-Do items will be dynamically added here -->
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- SVG Wave Divider between To-Do App and Testimonials -->
+        <div class="svg-divider bottom">
+            <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+                <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" class="shape-fill"></path>
+            </svg>
+        </div>
+
+        <!-- Testimonials Section -->
+        <section id="testimonials" class="py-16 md:py-24 bg-themed-secondary rounded-xl-lg mx-4 md:mx-auto my-8 shadow-themed">
+            <div class="container mx-auto px-4 text-center">
+                <h2 class="text-3xl md:text-4xl font-bold mb-8 text-themed-primary animate-fade-in">What Our Clients Say</h2>
+
+                <div class="testimonial-slider relative max-w-3xl mx-auto p-8 rounded-xl shadow-md">
+                    <div class="testimonial-container" id="testimonial-container">
+                        <!-- Testimonial 1 -->
+                        <div class="testimonial-item p-4">
+                            <p class="text-lg italic text-themed-secondary mb-4">"MyBrand has revolutionized the way we work. The ease of use and powerful features are unmatched. Highly recommended!"</p>
+                            <p class="font-semibold text-themed-primary">- Jane Doe, CEO of Tech Solutions</p>
+                        </div>
+                        <!-- Testimonial 2 -->
+                        <div class="testimonial-item p-4">
+                            <p class="text-lg italic text-themed-secondary mb-4">"The support team is incredible, and the product itself is a game-changer. We've seen significant improvements since adopting MyBrand."</p>
+                            <p class="font-semibold text-themed-primary">- John Smith, Marketing Director</p>
+                        </div>
+                        <!-- Testimonial 3 -->
+                        <div class="testimonial-item p-4">
+                            <p class="text-lg italic text-themed-secondary mb-4">"A truly innovative platform that delivers on its promises. Our productivity has soared. Thank you, MyBrand!"</p>
+                            <p class="font-semibold text-themed-primary">- Emily White, Small Business Owner</p>
+                        </div>
+                    </div>
+                    <button class="slider-button prev rounded-full-lg" id="prev-testimonial">&#10094;</button>
+                    <button class="slider-button next rounded-full-lg" id="next-testimonial">&#10095;</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SVG Wave Divider between Testimonials and Contact -->
+        <div class="svg-divider top">
+            <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+                <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" class="shape-fill"></path>
+            </svg>
+        </div>
+
+        <!-- Contact Section -->
+        <section id="contact" class="py-16 md:py-24 bg-themed-primary rounded-xl-lg mx-4 md:mx-auto my-8 shadow-themed">
+            <div class="container mx-auto px-4 text-center">
+                <h2 class="text-3xl md:text-4xl font-bold mb-8 text-themed-primary animate-fade-in">Contact Us</h2>
+                <p class="text-lg text-themed-secondary max-w-2xl mx-auto mb-8 animate-fade-in-up">
+                    Have questions or want to learn more? Feel free to reach out to us! We'd love to hear from you.
+                </p>
+                <form id="contact-form" class="max-w-xl mx-auto bg-themed-secondary p-8 rounded-xl shadow-themed animate-fade-in-up">
+                    <div class="mb-6 text-left">
+                        <label for="name" class="block text-themed-primary text-sm font-bold mb-2">Name</label>
+                        <input type="text" id="name" name="name" class="shadow appearance-none border rounded-lg w-full py-3 px-4 leading-tight focus:ring-2 input-themed" placeholder="Your Name" required>
+                        <p class="error-message" id="name-error"></p>
+                    </div>
+                    <div class="mb-6 text-left">
+                        <label for="email" class="block text-themed-primary text-sm font-bold mb-2">Email</label>
+                        <input type="email" id="email" name="email" class="shadow appearance-none border rounded-lg w-full py-3 px-4 leading-tight focus:ring-2 input-themed" placeholder="your.email@example.com" required>
+                        <p class="error-message" id="email-error"></p>
+                    </div>
+                    <div class="mb-6 text-left">
+                        <label for="message" class="block text-themed-primary text-sm font-bold mb-2">Message</label>
+                        <textarea id="message" name="message" rows="5" class="shadow appearance-none border rounded-lg w-full py-3 px-4 leading-tight focus:ring-2 input-themed" placeholder="Your message..." required></textarea>
+                        <p class="error-message" id="message-error"></p>
+                    </div>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105">
+                        Send Message
+                    </button>
+                </form>
+            </div>
+        </section>
+    </main> <!-- End of main content wrapper -->
+
+    <!-- SVG Wave Divider between Contact and Footer -->
+    <div class="svg-divider bottom">
+        <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+            <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" class="shape-fill"></path>
+        </svg>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 rounded-t-lg shadow-inner">
+        <div class="container mx-auto px-4 text-center">
+            <p class="mb-4">&copy; 2025 Barath. All rights reserved.</p>
+            <div class="flex justify-center space-x-6">
+                <a href="#" class="text-gray-400 hover:text-white transition-colors duration-300">Privacy Policy</a>
+                <a href="#" class="text-gray-400 hover:text-white transition-colors duration-300">Terms of Service</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript for interactivity -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Theme Toggle ---
+            const themeToggleBtn = document.getElementById('theme-toggle');
+            const themeIcon = document.getElementById('theme-icon');
+            const currentTheme = localStorage.getItem('theme');
+
+            // Apply saved theme on load
+            if (currentTheme) {
+                document.documentElement.classList.add(currentTheme);
+                themeIcon.textContent = currentTheme === 'dark' ? '🌙' : '☀️';
+            } else {
+                // Default to light if no theme is saved
+                document.documentElement.classList.add('light');
+                themeIcon.textContent = '☀️';
+            }
+
+            themeToggleBtn.addEventListener('click', () => {
+                if (document.documentElement.classList.contains('dark')) {
+                    document.documentElement.classList.remove('dark');
+                    document.documentElement.classList.add('light');
+                    localStorage.setItem('theme', 'light');
+                    themeIcon.textContent = '☀️';
+                } else {
+                    document.documentElement.classList.remove('light');
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('theme', 'dark');
+                    themeIcon.textContent = '🌙';
+                }
+            });
+
+            // --- Mobile Menu Toggle (Sidebar as mobile menu) ---
+            const mobileMenuButton = document.getElementById('mobile-menu-button'); // Hamburger icon
+            const sidebar = document.querySelector('.sidebar');
+            const mobileNavCloseButton = document.getElementById('mobile-nav-close-button'); // X button inside sidebar
+            const mobileNavBackdrop = document.getElementById('mobile-nav-backdrop'); // Dark overlay
+            const sidebarNavLinks = document.querySelectorAll('#sidebar-nav a');
+            const body = document.body;
+
+            function toggleSidebar() {
+                sidebar.classList.toggle('is-open');
+                mobileNavBackdrop.classList.toggle('is-open');
+                body.classList.toggle('overflow-hidden'); // Prevent scrolling when menu is open
+            }
+
+            mobileMenuButton.addEventListener('click', toggleSidebar);
+            mobileNavCloseButton.addEventListener('click', toggleSidebar);
+            mobileNavBackdrop.addEventListener('click', toggleSidebar); // Close when clicking outside sidebar
+
+            // Close sidebar when a link is clicked
+            sidebarNavLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    // Only close if it's a mobile view (sidebar is open via toggle)
+                    if (sidebar.classList.contains('is-open')) {
+                        toggleSidebar();
+                    }
+                });
+            });
+
+
+            // --- Animate features on scroll (Intersection Observer) ---
+            const featureCards = document.querySelectorAll('.feature-card');
+
+            const observerOptions = {
+                root: null, // viewport as the root
+                rootMargin: '0px',
+                threshold: 0.2 // Trigger when 20% of the item is visible
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                        observer.unobserve(entry.target); // Stop observing once animated
+                    }
+                });
+            }, observerOptions);
+
+            featureCards.forEach(card => {
+                observer.observe(card);
+            });
+
+            // --- Three.js Particle Background for Hero Section ---
+            let scene, camera, renderer, particles, particleMaterial;
+            let mouseX = 0, mouseY = 0;
+            let particlePositions; // To store initial positions for movement
+            let particleVelocities; // To store particle velocities for continuous movement
+            let particleCount = 1000; // Default particle count
+
+            const initParticles = () => {
+                const container = document.getElementById('home');
+                const canvas = document.getElementById('particle-canvas');
+                
+                // Scene cleanup if already initialized (important for re-runs in dev environments)
+                if (scene) {
+                    scene.clear();
+                    renderer.dispose();
+                    // Remove event listeners to prevent duplicates
+                    document.removeEventListener('mousemove', onDocumentMouseMove);
+                    window.removeEventListener('resize', onWindowResize);
+                }
+
+                // Adjust particle count based on prefers-reduced-motion
+                if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                    particleCount = 200; // Significantly reduce particles for accessibility/performance
+                } else {
+                    particleCount = 1000; // Standard particle count
+                }
+
+                // Scene
+                scene = new THREE.Scene();
+
+                // Camera
+                camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 1, 1000);
+                camera.position.z = 300;
+
+                // Renderer
+                renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true }); // Antialias for smoother edges
+                renderer.setSize(container.clientWidth, container.clientHeight);
+                renderer.setPixelRatio(window.devicePixelRatio);
+
+                // Particles
+                const geometry = new THREE.BufferGeometry();
+                const positions = [];
+                const colors = [];
+                const color = new THREE.Color();
+
+                particlePositions = new Float32Array(particleCount * 3); // Store initial positions
+                particleVelocities = new Float32Array(particleCount * 3); // Store velocities
+
+                for (let i = 0; i < particleCount; i++) {
+                    // Random positions
+                    const x = (Math.random() * 2 - 1) * 500;
+                    const y = (Math.random() * 2 - 1) * 500;
+                    const z = (Math.random() * 2 - 1) * 500;
+                    positions.push(x, y, z);
+                    particlePositions[i * 3] = x;
+                    particlePositions[i * 3 + 1] = y;
+                    particlePositions[i * 3 + 2] = z;
+
+                    // Random velocities for subtle continuous movement
+                    particleVelocities[i * 3] = (Math.random() - 0.5) * 0.1; // X velocity
+                    particleVelocities[i * 3 + 1] = (Math.random() - 0.5) * 0.1; // Y velocity
+                    particleVelocities[i * 3 + 2] = (Math.random() - 0.5) * 0.1; // Z velocity
+
+                    // Random colors (subtle variations of indigo/purple)
+                    const hue = Math.random() * (270 - 240) + 240; // Hue between 240 (blue) and 270 (purple)
+                    const saturation = Math.random() * (0.8 - 0.5) + 0.5;
+                    const lightness = Math.random() * (0.7 - 0.4) + 0.4;
+                    color.setHSL(hue / 360, saturation, lightness);
+                    colors.push(color.r, color.g, color.b);
+                }
+
+                geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+                particleMaterial = new THREE.PointsMaterial({
+                    size: 1.5, // Slightly smaller particles
+                    vertexColors: true, // Use colors from geometry
+                    transparent: true,
+                    opacity: 0.5,
+                    blending: THREE.AdditiveBlending // For glow effect
+                });
+
+                particles = new THREE.Points(geometry, particleMaterial);
+                scene.add(particles);
+
+                // Add a subtle ambient light to make the particles visible
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+                scene.add(ambientLight);
+
+                // Add a directional light for highlights
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                directionalLight.position.set(0, 1, 1).normalize();
+                scene.add(directionalLight);
+
+
+                // Mouse interaction for parallax effect
+                document.addEventListener('mousemove', onDocumentMouseMove, false);
+                window.addEventListener('resize', onWindowResize, false);
+
+                animateParticles(); // Start animation loop
+            };
+
+            const onDocumentMouseMove = (event) => {
+                mouseX = (event.clientX - window.innerWidth / 2);
+                mouseY = (event.clientY - window.innerHeight / 2);
+            };
+
+            const onWindowResize = () => {
+                const container = document.getElementById('home');
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            };
+
+            const animateParticles = () => {
+                requestAnimationFrame(animateParticles);
+
+                // Update particle positions based on velocities
+                const positions = particles.geometry.attributes.position.array;
+                for (let i = 0; i < particleCount; i++) {
+                    const i3 = i * 3;
+                    positions[i3] += particleVelocities[i3];
+                    positions[i3 + 1] += particleVelocities[i3 + 1];
+                    positions[i3 + 2] += particleVelocities[i3 + 2];
+
+                    // Wrap particles around the scene if they go too far
+                    // This creates a continuous flow effect
+                    if (positions[i3] > 500) positions[i3] = -500;
+                    if (positions[i3] < -500) positions[i3] = 500;
+                    if (positions[i3 + 1] > 500) positions[i3 + 1] = -500;
+                    if (positions[i3 + 1] < -500) positions[i3 + 1] = 500;
+                    if (positions[i3 + 2] > 500) positions[i3 + 2] = -500;
+                    if (positions[i3 + 2] < -500) positions[i3 + 2] = 500;
+                }
+                particles.geometry.attributes.position.needsUpdate = true; // Tell Three.js to update positions
+
+                // Rotate particles
+                particles.rotation.x += 0.0002; // Slower rotation
+                particles.rotation.y += 0.0005; // Slower rotation
+
+                // Parallax effect based on mouse position
+                camera.position.x += (mouseX * 0.05 - camera.position.x) * 0.05;
+                camera.position.y += (-mouseY * 0.05 - camera.position.y) * 0.05;
+                camera.lookAt(scene.position);
+
+                renderer.render(scene, camera);
+            };
+
+            // Initialize particles when the window loads
+            window.onload = function () {
+                initParticles();
+            }
+
+            // --- Testimonial Slider ---
+            const testimonialContainer = document.getElementById('testimonial-container');
+            const prevButton = document.getElementById('prev-testimonial');
+            const nextButton = document.getElementById('next-testimonial');
+            const testimonialItems = document.querySelectorAll('.testimonial-item');
+            let currentIndex = 0;
+
+            function updateSlider() {
+                // Ensure testimonialItems has elements before accessing clientWidth
+                if (testimonialItems.length > 0) {
+                    const itemWidth = testimonialItems[0].clientWidth;
+                    testimonialContainer.style.transform = `translateX(${-currentIndex * itemWidth}px)`;
+                }
+            }
+
+            prevButton.addEventListener('click', () => {
+                currentIndex = (currentIndex > 0) ? currentIndex - 1 : testimonialItems.length - 1;
+                updateSlider();
+            });
+
+            nextButton.addEventListener('click', () => {
+                currentIndex = (currentIndex < testimonialItems.length - 1) ? currentIndex + 1 : 0;
+                updateSlider();
+            });
+
+            // Update slider on resize to maintain correct positioning
+            window.addEventListener('resize', updateSlider);
+            updateSlider(); // Initial update
+
+            // --- Contact Form Validation ---
+            const contactForm = document.getElementById('contact-form');
+            const nameInput = document.getElementById('name');
+            const emailInput = document.getElementById('email');
+            const messageInput = document.getElementById('message');
+
+            const nameError = document.getElementById('name-error');
+            const emailError = document.getElementById('email-error');
+            const messageError = document.getElementById('message-error');
+
+            const validateEmail = (email) => {
+                const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return re.test(String(email).toLowerCase());
+            };
+
+            contactForm.addEventListener('submit', (event) => {
+                event.preventDefault(); // Prevent default form submission
+
+                let isValid = true;
+
+                // Validate Name
+                if (nameInput.value.trim() === '') {
+                    nameError.textContent = 'Name is required.';
+                    isValid = false;
+                } else {
+                    nameError.textContent = '';
+                }
+
+                // Validate Email
+                if (emailInput.value.trim() === '') {
+                    emailError.textContent = 'Email is required.';
+                    isValid = false;
+                } else if (!validateEmail(emailInput.value.trim())) {
+                    emailError.textContent = 'Please enter a valid email address.';
+                    isValid = false;
+                } else {
+                    emailError.textContent = '';
+                }
+
+                // Validate Message
+                if (messageInput.value.trim() === '') {
+                    messageError.textContent = 'Message is required.';
+                    isValid = false;
+                } else {
+                    messageError.textContent = '';
+                }
+
+                if (isValid) {
+                    // If all validations pass, you can submit the form
+                    // For this example, we'll just log to console and reset
+                    console.log('Form submitted successfully!');
+                    console.log('Name:', nameInput.value);
+                    console.log('Email:', emailInput.value);
+                    console.log('Message:', messageInput.value);
+
+                    // Reset form fields
+                    contactForm.reset();
+                    // In a real application, you would send this data to a server
+                    // e.g., fetch('/api/contact', { method: 'POST', body: JSON.stringify({ name, email, message }) });
+                }
+            });
+
+            // --- To-Do List Functionality ---
+            const newTaskInput = document.getElementById('new-task-input');
+            const addTaskBtn = document.getElementById('add-task-btn');
+            const taskList = document.getElementById('task-list');
+            const taskInputError = document.getElementById('task-input-error');
+            const filterAllBtn = document.getElementById('filter-all');
+            const filterActiveBtn = document.getElementById('filter-active');
+            const filterCompletedBtn = document.getElementById('filter-completed');
+            const clearCompletedBtn = document.getElementById('clear-completed-btn');
+
+            let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+            let currentFilter = 'all'; // 'all', 'active', 'completed'
+
+            // Function to render tasks based on current filter
+            const renderTasks = () => {
+                taskList.innerHTML = ''; // Clear existing tasks
+                const filteredTasks = tasks.filter(task => {
+                    if (currentFilter === 'active') return !task.completed;
+                    if (currentFilter === 'completed') return task.completed;
+                    return true; // 'all' filter
+                });
+
+                if (filteredTasks.length === 0 && tasks.length > 0) {
+                    const noTasksMessage = document.createElement('li');
+                    noTasksMessage.className = 'todo-item text-themed-secondary justify-center py-4';
+                    noTasksMessage.textContent = `No ${currentFilter} tasks to display.`;
+                    taskList.appendChild(noTasksMessage);
+                    return;
+                } else if (tasks.length === 0) {
+                    const noTasksMessage = document.createElement('li');
+                    noTasksMessage.className = 'todo-item text-themed-secondary justify-center py-4';
+                    noTasksMessage.textContent = 'No tasks added yet. Start by adding a new task!';
+                    taskList.appendChild(noTasksMessage);
+                    return;
+                }
+
+
+                filteredTasks.forEach((task, index) => {
+                    const listItem = document.createElement('li');
+                    listItem.className = `todo-item ${task.completed ? 'completed' : ''}`;
+                    // Store original index for manipulation - IMPORTANT: This index can become stale if tasks array changes due to deletion/addition
+                    // A more robust approach for larger apps would be to assign unique IDs to tasks.
+                    // For this simple demo, re-rendering the entire list after changes mitigates most issues.
+                    listItem.dataset.originalIndex = tasks.indexOf(task); // Store actual index in the original 'tasks' array
+
+                    listItem.innerHTML = `
+                        <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}>
+                        <span class="task-text">${task.text}</span>
+                        <div class="task-actions">
+                            <button class="delete-btn" aria-label="Delete task">&times;</button>
+                        </div>
+                    `;
+                    taskList.appendChild(listItem);
+                });
+            };
+
+            // Function to save tasks to local storage
+            const saveTasks = () => {
+                localStorage.setItem('tasks', JSON.stringify(tasks));
+            };
+
+            // Add new task
+            addTaskBtn.addEventListener('click', () => {
+                const taskText = newTaskInput.value.trim();
+                if (taskText === '') {
+                    taskInputError.textContent = 'Task cannot be empty.';
+                    return;
+                }
+                taskInputError.textContent = ''; // Clear error
+
+                tasks.push({ text: taskText, completed: false });
+                newTaskInput.value = ''; // Clear input
+                saveTasks();
+                renderTasks();
+            });
+
+            // Handle checkbox toggle and delete button clicks using event delegation
+            taskList.addEventListener('click', (event) => {
+                const target = event.target;
+                const listItem = target.closest('.todo-item');
+                if (!listItem) return; // Not a task item
+
+                // Use the originalIndex to find the task in the 'tasks' array
+                const originalIndex = parseInt(listItem.dataset.originalIndex);
+                
+                // Re-find the actual index in the current 'tasks' array to ensure correctness
+                const actualTask = tasks.find((task, idx) => idx === originalIndex || task.text === listItem.querySelector('.task-text').textContent);
+                const actualIndex = tasks.indexOf(actualTask);
+
+
+                if (target.classList.contains('task-checkbox')) {
+                    if (actualIndex !== -1) {
+                        tasks[actualIndex].completed = !tasks[actualIndex].completed;
+                        saveTasks();
+                        renderTasks(); // Re-render to apply completed style
+                    }
+                } else if (target.classList.contains('delete-btn')) {
+                    if (actualIndex !== -1) {
+                        tasks.splice(actualIndex, 1);
+                        saveTasks();
+                        renderTasks(); // Re-render after deletion
+                    }
+                }
+            });
+
+            // Filter buttons functionality
+            const filterButtons = document.querySelectorAll('.todo-filters button:not(.clear-completed-btn)');
+            filterButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    currentFilter = button.id.replace('filter-', '');
+                    renderTasks();
+                });
+            });
+
+            // Clear completed tasks
+            clearCompletedBtn.addEventListener('click', () => {
+                tasks = tasks.filter(task => !task.completed);
+                saveTasks();
+                renderTasks();
+            });
+
+            // Initial render of tasks when page loads
+            renderTasks();
+
+            // --- Sidebar Active Link and Scroll Spy ---
+            const sections = document.querySelectorAll('main section'); // Get all main sections
+
+            // Function to remove active class from all sidebar links
+            const removeActiveClass = () => {
+                sidebarNavLinks.forEach(link => {
+                    link.classList.remove('active');
+                });
+            };
+
+            // Intersection Observer for scroll spy
+            const sectionObserverOptions = {
+                root: null, // viewport
+                rootMargin: '-50% 0px -50% 0px', // When section is roughly in the middle of the viewport
+                threshold: 0 // As soon as any part of the section enters/exits
+            };
+
+            const sectionObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const currentSectionId = entry.target.id;
+                        removeActiveClass();
+                        const correspondingLink = document.querySelector(`#sidebar-nav a[data-section="${currentSectionId}"]`);
+                        if (correspondingLink) {
+                            correspondingLink.classList.add('active');
+                        }
+                    }
+                });
+            }, sectionObserverOptions);
+
+            // Observe each section
+            sections.forEach(section => {
+                sectionObserver.observe(section);
+            });
+
+            // Handle clicks on sidebar links (for smooth scroll and immediate active state)
+            sidebarNavLinks.forEach(link => {
+                link.addEventListener('click', (event) => {
+                    event.preventDefault(); // Prevent default jump
+                    const targetId = link.getAttribute('href').substring(1);
+                    const targetSection = document.getElementById(targetId);
+
+                    if (targetSection) {
+                        // Smooth scroll to section
+                        targetSection.scrollIntoView({ behavior: 'smooth' });
+
+                        // Manually set active class immediately on click
+                        removeActiveClass();
+                        link.classList.add('active');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
